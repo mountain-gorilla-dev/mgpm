@@ -1,0 +1,15 @@
+{
+  "name": "rust",
+  "workspaceFolder": "/root/app",
+  "dockerComposeFile": ["../compose.yml"],
+  "service": "app",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "editorconfig.editorconfig",
+        "eamodio.gitlens",
+        "rust-lang.rust-analyzer"
+      ]
+    }
+  }
+}

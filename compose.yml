@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    tty: true
+    init: true
+    volumes:
+      - .:/root/app
