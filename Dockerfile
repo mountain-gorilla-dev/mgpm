@@ -1,4 +1,4 @@
-FROM rust:1.75.0-slim-buster
+FROM rust:1.75.0-slim-bullseye
 
 WORKDIR /root/app
 
@@ -8,3 +8,6 @@ RUN apt update && \
         pkg-config \
         libssl-dev \
         git
+
+RUN rustup component add rustfmt && \
+    rustup component add clippy
