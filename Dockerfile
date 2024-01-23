@@ -6,4 +6,5 @@ RUN apt update && \
     apt install -y \
         build-essential \
         pkg-config \
-        libssl-dev
+        libssl-dev \
+        git
