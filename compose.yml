@@ -6,4 +6,4 @@ services:
     tty: true
     init: true
     volumes:
-      - .:/root/app
+      - .:/home/user/.mgpm

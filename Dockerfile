@@ -1,6 +1,8 @@
 FROM rust:1.75.0-slim-bullseye
 
-WORKDIR /root/app
+WORKDIR /home/user/.mgpm
+
+USER user
 
 RUN apt update && \
     apt install -y \

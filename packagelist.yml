@@ -1,0 +1,10 @@
+packages:
+  mgsec:
+    name: セキュリティチェックツール
+    description: あああ
+    ripository: git@github.com:mountain-gorilla-inc/mgsec.git
+
+  mgserve:
+    name: ローカルサーバー
+    description: あああ
+    ripository: git@github.com:mountain-gorilla-inc/mgserve.git
