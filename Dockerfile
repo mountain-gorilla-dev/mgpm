@@ -11,5 +11,7 @@ RUN apt update && \
         libssl-dev \
         git
 
+RUN cargo install cargo-watch
+
 RUN rustup component add rustfmt && \
     rustup component add clippy
