@@ -1,5 +1,5 @@
 {
-  "name": "rust",
+  "name": "mgpm",
   "workspaceFolder": "/home/user/.mgpm",
   "dockerComposeFile": ["../compose.yml"],
   "service": "app",
