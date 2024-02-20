@@ -33,8 +33,12 @@
 // }
 
 extern crate yaml_rust;
+use dialoguer::MultiSelect;
 use std::fs;
-use yaml_rust::{YamlEmitter, YamlLoader};
+use std::fs::File;
+use std::io;
+use std::os::unix::fs::PermissionsExt;
+use yaml_rust::YamlLoader;
 
 fn load_yaml(path: &str) -> Vec<yaml_rust::Yaml> {
     let f = fs::read_to_string(path);
@@ -43,22 +47,51 @@ fn load_yaml(path: &str) -> Vec<yaml_rust::Yaml> {
     docs
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = "./packagelist.yml";
     let docs = load_yaml(&path);
     let doc = &docs[0];
-    // println!("{:?}", doc["packages"].as_str().unwrap());
-    // Test
-    // assert_eq!(doc["foo"][0].as_str().unwrap(), "list1");
-    // assert_eq!(doc["bar"][0].as_i64().unwrap(), 1);
-    // assert_eq!(doc["bar"][1].as_f64().unwrap(), 2.0);
-    assert!(doc["INVALID_KEY"][100].is_badvalue());
-    // Dump the YAML object
-    let mut out_str = String::new();
-    {
-        let mut emitter = YamlEmitter::new(&mut out_str);
-        emitter.dump(doc).unwrap();
+    let mut choices = vec![];
+    let mut defaults = vec![];
+
+    for package in doc["packages"].as_hash().unwrap() {
+        choices.push(package.1["name"].as_str().unwrap());
+        defaults.push(false);
+        // println!("{:?}", package.1["name"].as_str().unwrap());
+        // println!("{:?}", package);
     }
-    println!("{}", out_str);
+
+    let selections: Vec<usize> = MultiSelect::new()
+        .with_prompt("インストールするパッケージを選んでください")
+        .items(&choices)
+        .defaults(&defaults)
+        .interact()?;
+
+    let vec_packages = doc["packages"]
+        .as_hash()
+        .unwrap()
+        .iter()
+        .collect::<Vec<_>>();
+    let packages = selections
+        .iter()
+        .map(|i| vec_packages[*i])
+        .collect::<Vec<_>>();
+
+    for package in &packages {
+        let repository = package.1["repository"].as_str().unwrap();
+        println!("{:?}", repository);
+        let url = package.1["bin_url"].as_str().unwrap();
+        let filename = format!("./opt/{}", url.split("/").last().unwrap());
+        let response: reqwest::Response = reqwest::get(url).await?;
+        let bytes = response.bytes().await?;
+        let mut out = File::create(filename.clone())?;
+        io::copy(&mut bytes.as_ref(), &mut out)?;
+
+        let mut perms = fs::metadata(filename.clone())?.permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(filename.clone(), perms)?;
+    }
+
     Ok(())
 }
