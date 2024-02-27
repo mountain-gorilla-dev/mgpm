@@ -1,97 +1,32 @@
-// use std::collections::HashMap;
+use clap::{Parser, Subcommand};
+mod commands;
 
-// use clap::Parser;
-
-// /// Search for a pattern in a file and display the lines that contain it.
-// #[derive(Parser)]
-// struct Cli {
-//     #[arg(
-//         value_name = "URL",
-//         help = "リクエストしたいURLを指定してください",
-//         default_value = ""
-//     )]
-//     url: String,
-// }
-
-// #[tokio::main]
-// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//     let args = Cli::parse();
-
-//     if args.url.is_empty() {
-//         println!("引数を指定してください");
-//         return Ok(());
-//     }
-
-//     println!("{}", args.url);
-
-//     let resp = reqwest::get(args.url)
-//         .await?
-//         .json::<HashMap<String, String>>()
-//         .await?;
-//     println!("{:#?}", resp);
-//     Ok(())
-// }
-
-extern crate yaml_rust;
-use dialoguer::MultiSelect;
-use std::fs;
-use std::fs::File;
-use std::io;
-use std::os::unix::fs::PermissionsExt;
-use yaml_rust::YamlLoader;
-
-fn load_yaml(path: &str) -> Vec<yaml_rust::Yaml> {
-    let f = fs::read_to_string(path);
-    let s = f.unwrap().to_string();
-    let docs = YamlLoader::load_from_str(&s).unwrap();
-    docs
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+#[command(propagate_version = true)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let path = "./packagelist.yml";
-    let docs = load_yaml(&path);
-    let doc = &docs[0];
-    let mut choices = vec![];
-    let mut defaults = vec![];
+#[derive(Subcommand)]
+enum Commands {
+    /// パッケージをインストールします
+    Install { name: Option<String> },
+    /// パッケージを削除します
+    Remove { name: Option<String> },
+    /// インストールさせたパッケージ一覧を表示します
+    List {},
+}
 
-    for package in doc["packages"].as_hash().unwrap() {
-        choices.push(package.1["name"].as_str().unwrap());
-        defaults.push(false);
-        // println!("{:?}", package.1["name"].as_str().unwrap());
-        // println!("{:?}", package);
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
+
+    // You can check for the existence of subcommands, and if found use their
+    // matches just as you would the top level cmd
+    match &cli.command {
+        Commands::Install { name } => commands::install::install(name),
+        Commands::Remove { name } => commands::remove::remove(name),
+        Commands::List {} => commands::list::list(),
     }
-
-    let selections: Vec<usize> = MultiSelect::new()
-        .with_prompt("インストールするパッケージを選んでください")
-        .items(&choices)
-        .defaults(&defaults)
-        .interact()?;
-
-    let vec_packages = doc["packages"]
-        .as_hash()
-        .unwrap()
-        .iter()
-        .collect::<Vec<_>>();
-    let packages = selections
-        .iter()
-        .map(|i| vec_packages[*i])
-        .collect::<Vec<_>>();
-
-    for package in &packages {
-        let repository = package.1["repository"].as_str().unwrap();
-        println!("{:?}", repository);
-        let url = package.1["bin_url"].as_str().unwrap();
-        let filename = format!("./opt/{}", url.split("/").last().unwrap());
-        let response: reqwest::Response = reqwest::get(url).await?;
-        let bytes = response.bytes().await?;
-        let mut out = File::create(filename.clone())?;
-        io::copy(&mut bytes.as_ref(), &mut out)?;
-
-        let mut perms = fs::metadata(filename.clone())?.permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(filename.clone(), perms)?;
-    }
-
-    Ok(())
 }

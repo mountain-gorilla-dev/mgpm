@@ -2,11 +2,11 @@ packages:
   mgsec:
     name: mgsec - セキュリティチェックツール
     description: あああ
-    repository: https://github.com/mountain-gorilla-inc/mgsec.git
-    bin_url: https://raw.githubusercontent.com/mountain-gorilla-inc/mgsec/main/bin/mgsec
+    repository: https://github.com/mountain-gorilla-dev/mgsec.git
+    bin_url: https://raw.githubusercontent.com/mountain-gorilla-dev/mgsec/main/bin/mgsec
 
   mgserve:
     name: mgserve - ローカルサーバー
     description: あああ
-    repository: https://github.com/mountain-gorilla-inc/mgserve.git
-    bin_url: https://raw.githubusercontent.com/mountain-gorilla-inc/mgserve/main/bin/mgserve
+    repository: https://github.com/mountain-gorilla-dev/mgserve.git
+    bin_url: https://raw.githubusercontent.com/mountain-gorilla-dev/mgserve/main/bin/mgserve
