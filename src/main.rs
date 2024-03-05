@@ -14,7 +14,11 @@ enum Commands {
     /// パッケージをインストールします
     Install { name: Option<String> },
     /// パッケージを削除します
-    Remove { name: Option<String> },
+    Remove {
+        name: Option<String>,
+        #[arg(short, long, help = "すべてを選択")]
+        all: bool,
+    },
     /// インストールさせたパッケージ一覧を表示します
     List {},
 }
@@ -26,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // matches just as you would the top level cmd
     match &cli.command {
         Commands::Install { name } => commands::install::install(name),
-        Commands::Remove { name } => commands::remove::remove(name),
+        Commands::Remove { name, all } => commands::remove::remove(name, *all),
         Commands::List {} => commands::list::list(),
     }
 }
