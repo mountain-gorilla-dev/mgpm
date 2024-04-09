@@ -4,7 +4,6 @@ use dialoguer::MultiSelect;
 use std::fs;
 use std::fs::File;
 use std::io;
-use std::os::unix::fs::PermissionsExt;
 use yaml_rust::YamlLoader;
 
 fn load_yaml(path: &str) -> Vec<yaml_rust::Yaml> {
@@ -13,6 +12,19 @@ fn load_yaml(path: &str) -> Vec<yaml_rust::Yaml> {
 
     YamlLoader::load_from_str(&s).unwrap()
 }
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn set_execute_permissions(filename: String) -> Result<(), Box<dyn std::error::Error>> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut perms = fs::metadata(filename.clone())?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(filename.clone(), perms)?;
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn set_execute_permissions(filename: String) {}
 
 #[tokio::main]
 pub async fn install(_: &Option<String>) -> Result<(), Box<dyn std::error::Error>> {
@@ -53,9 +65,7 @@ pub async fn install(_: &Option<String>) -> Result<(), Box<dyn std::error::Error
         let mut out = File::create(filename.clone())?;
         io::copy(&mut bytes.as_ref(), &mut out)?;
 
-        let mut perms = fs::metadata(filename.clone())?.permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(filename.clone(), perms)?;
+        let _ = set_execute_permissions(filename);
     }
 
     Ok(())

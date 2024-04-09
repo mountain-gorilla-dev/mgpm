@@ -1,0 +1,23 @@
+# https://taskfile.dev
+
+version: "3"
+tasks:
+  build:
+    desc: ビルド
+    cmds:
+      - |
+        docker run --rm -it -v $(pwd):/io -w /io messense/cargo-zigbuild \
+        /bin/bash -c "
+          rustup toolchain install stable-x86_64-pc-windows-gnu && \
+          cargo zigbuild --release --target x86_64-pc-windows-gnu && \
+          cargo zigbuild --release --target x86_64-apple-darwin && \
+          cargo zigbuild --release --target aarch64-apple-darwin && \
+          cargo zigbuild --release --target x86_64-unknown-linux-gnu && \
+          cargo zigbuild --release --target aarch64-unknown-linux-gnu && \
+          mkdir -p ./target/bin && \
+          cp ./target/aarch64-apple-darwin/release/mgpm ./target/bin/mgpm-darwin-aarch64 && \
+          cp ./target/x86_64-apple-darwin/release/mgpm ./target/bin/mgpm-darwin-x86_64 && \
+          cp ./target/x86_64-pc-windows-gnu/release/mgpm.exe ./target/bin/mgpm-windows-x86_64.exe && \
+          cp ./target/aarch64-unknown-linux-gnu/release/mgpm ./target/bin/mgpm-linux-aarch64 && \
+          cp ./target/x86_64-unknown-linux-gnu/release/mgpm ./target/bin/mgpm-linux-x86_64
+        "
