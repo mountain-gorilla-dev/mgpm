@@ -1,8 +1,14 @@
 use std::ffi::OsString;
 use std::fs;
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+const LIB_PATH: &str = "/var/lib/mgpm";
+
+#[cfg(any(target_os = "windows"))]
+const LIB_PATH: &str = "C://ProgramData/mgpm";
+
 pub fn remove(name: &Option<String>, all: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let entries = fs::read_dir("./opt").unwrap(); // ReadDir を取得
+    let entries = fs::read_dir(format!("{LIB_PATH}/opt")).unwrap(); // ReadDir を取得
     let mut pkgs: Vec<OsString> = vec![];
     // ループで Result<DieEntry, Error> をひとつずつ処理
     for entry in entries {
@@ -21,7 +27,7 @@ pub fn remove(name: &Option<String>, all: bool) -> Result<(), Box<dyn std::error
 
         if input.trim().to_lowercase() == "y" {
             for pkg in pkgs {
-                let path = format!("./opt/{}", pkg.into_string().unwrap());
+                let path = format!("{LIB_PATH}/opt/{}", pkg.into_string().unwrap());
                 fs::remove_file(path)?;
             }
         }
@@ -38,7 +44,8 @@ pub fn remove(name: &Option<String>, all: bool) -> Result<(), Box<dyn std::error
         .into_iter()
         .any(|p| p.into_string().unwrap() == str_name)
     {
-        let path = format!("./opt/{}", name.clone().unwrap());
+
+        let path = format!("{LIB_PATH}/opt/{}", name.clone().unwrap());
         fs::remove_file(path)?;
         println!("{:?} を削除しました", str_name);
         return Ok(());

@@ -6,12 +6,11 @@ use std::fs::File;
 use std::io;
 use yaml_rust::YamlLoader;
 
-fn load_yaml(path: &str) -> Vec<yaml_rust::Yaml> {
-    let f = fs::read_to_string(path);
-    let s = f.unwrap().to_string();
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+const LIB_PATH: &str = "/var/lib/mgpm";
 
-    YamlLoader::load_from_str(&s).unwrap()
-}
+#[cfg(any(target_os = "windows"))]
+const LIB_PATH: &str = "C://ProgramData/mgpm";
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 fn set_execute_permissions(filename: String) -> Result<(), Box<dyn std::error::Error>> {
@@ -28,8 +27,7 @@ fn set_execute_permissions(filename: String) {}
 
 #[tokio::main]
 pub async fn install(_: &Option<String>) -> Result<(), Box<dyn std::error::Error>> {
-    let path = "./packagelist.yml";
-    let docs = load_yaml(path);
+    let docs = YamlLoader::load_from_str(include_str!("../../packagelist.yml")).unwrap();
     let doc = &docs[0];
     let mut choices = vec![];
     let mut defaults = vec![];
@@ -59,7 +57,7 @@ pub async fn install(_: &Option<String>) -> Result<(), Box<dyn std::error::Error
         let repository = package.1["repository"].as_str().unwrap();
         println!("{:?}", repository);
         let url = package.1["bin_url"].as_str().unwrap();
-        let filename = format!("./opt/{}", url.split('/').last().unwrap());
+        let filename = format!("{LIB_PATH}/opt/{}", url.split('/').last().unwrap());
         let response: reqwest::Response = reqwest::get(url).await?;
         let bytes = response.bytes().await?;
         let mut out = File::create(filename.clone())?;
