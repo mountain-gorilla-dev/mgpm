@@ -1,20 +1,18 @@
+use std::ffi::OsString;
 use std::fs;
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-const LIB_PATH: &str = "/var/lib/mgpm";
+const LIB_PATH: &str = "/usr/local/bin";
 
 #[cfg(any(target_os = "windows"))]
 const LIB_PATH: &str = "C://ProgramData/mgpm";
 
 pub fn list() -> Result<(), Box<dyn std::error::Error>> {
-    let entries = fs::read_dir(format!("{LIB_PATH}/opt")).unwrap(); // ReadDir を取得
+    let packages = crate::packagelist::import_packagelist();
 
-    // ループで Result<DieEntry, Error> をひとつずつ処理
-    for entry in entries {
-        // DirEntry#file_name() でファイル名（ディレクトリ名）を取得できる
-        let file_name = entry.unwrap().file_name();
-        if file_name != ".gitignore" {
-            println!("{:?}", file_name);
+    for package in packages {
+        if fs::metadata(package.path).is_ok() {
+            println!("{:?}", package.name)
         }
     }
     Ok(())

@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 mod commands;
-
+mod packagelist;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]

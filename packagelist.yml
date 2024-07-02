@@ -1,12 +1,27 @@
-packages:
-  mgsec:
-    name: mgsec - セキュリティチェックツール
-    description: あああ
-    repository: https://github.com/mountain-gorilla-dev/mgsec.git
-    bin_url: https://raw.githubusercontent.com/mountain-gorilla-dev/mgsec/main/bin/mgsec
+- name: mgsec
+  description: セキュリティチェックツール
+  repository: https://github.com/mountain-gorilla-dev/mgsec.git
+  supported:
+    linux:
+      x86_64: true
+      aarch64: true
+    mac:
+      x86_64: true
+      aarch64: true
+    windows:
+      x86_64: false
+      aarch64: false
 
-  mgserve:
-    name: mgserve - ローカルサーバー
-    description: あああ
-    repository: https://github.com/mountain-gorilla-dev/mgserve.git
-    bin_url: https://raw.githubusercontent.com/mountain-gorilla-dev/mgserve/main/bin/mgserve
+- name: mgserve
+  description: ローカルサーバー
+  repository: https://github.com/mountain-gorilla-dev/mgserve.git
+  supported:
+    linux:
+      x86_64: true
+      aarch64: true
+    mac:
+      x86_64: true
+      aarch64: true
+    windows:
+      x86_64: false
+      aarch64: false

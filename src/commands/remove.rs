@@ -2,23 +2,14 @@ use std::ffi::OsString;
 use std::fs;
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-const LIB_PATH: &str = "/var/lib/mgpm";
+const LIB_PATH: &str = "/usr/local/bin";
 
 #[cfg(any(target_os = "windows"))]
 const LIB_PATH: &str = "C://ProgramData/mgpm";
 
 pub fn remove(name: &Option<String>, all: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let entries = fs::read_dir(format!("{LIB_PATH}/opt")).unwrap(); // ReadDir を取得
-    let mut pkgs: Vec<OsString> = vec![];
-    // ループで Result<DieEntry, Error> をひとつずつ処理
-    for entry in entries {
-        // DirEntry#file_name() でファイル名（ディレクトリ名）を取得できる
-        let file_name = entry.unwrap().file_name();
-        if file_name != ".gitignore" {
-            // println!("{:?}", file_name);
-            pkgs.push(file_name);
-        }
-    }
+    // let entries = fs::read_dir(LIB_PATH).unwrap(); // ReadDir を取得
+    let packages = crate::packagelist::import_packagelist();
 
     if all {
         println!("本当に削除してよろしいですか？ (y/n)");
@@ -26,9 +17,8 @@ pub fn remove(name: &Option<String>, all: bool) -> Result<(), Box<dyn std::error
         std::io::stdin().read_line(&mut input)?;
 
         if input.trim().to_lowercase() == "y" {
-            for pkg in pkgs {
-                let path = format!("{LIB_PATH}/opt/{}", pkg.into_string().unwrap());
-                fs::remove_file(path)?;
+            for package in packages {
+                remove_file(&package.path)?;
             }
         }
         return Ok(());
@@ -40,17 +30,24 @@ pub fn remove(name: &Option<String>, all: bool) -> Result<(), Box<dyn std::error
     }
 
     let str_name = name.clone().unwrap().to_string();
-    if pkgs
-        .into_iter()
-        .any(|p| p.into_string().unwrap() == str_name)
-    {
 
-        let path = format!("{LIB_PATH}/opt/{}", name.clone().unwrap());
-        fs::remove_file(path)?;
+    if packages.into_iter().any(|p| p.name == str_name) {
+        let path = format!("{LIB_PATH}/{}", name.clone().unwrap());
+        remove_file(&path)?;
         println!("{:?} を削除しました", str_name);
         return Ok(());
     } else {
         println!("{:?} はインストールされていません", str_name);
     }
+    Ok(())
+}
+
+fn remove_file(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let _ = match fs::metadata(path) {
+        Ok(_) => fs::remove_file(path),
+        // Err(ref e) if e.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(e),
+    };
+
     Ok(())
 }

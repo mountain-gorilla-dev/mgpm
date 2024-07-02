@@ -4,10 +4,9 @@ use dialoguer::MultiSelect;
 use std::fs;
 use std::fs::File;
 use std::io;
-use yaml_rust::YamlLoader;
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-const LIB_PATH: &str = "/var/lib/mgpm";
+const LIB_PATH: &str = "/usr/local/bin";
 
 #[cfg(any(target_os = "windows"))]
 const LIB_PATH: &str = "C://ProgramData/mgpm";
@@ -27,13 +26,12 @@ fn set_execute_permissions(filename: String) {}
 
 #[tokio::main]
 pub async fn install(_: &Option<String>) -> Result<(), Box<dyn std::error::Error>> {
-    let docs = YamlLoader::load_from_str(include_str!("../../packagelist.yml")).unwrap();
-    let doc = &docs[0];
+    let packages = crate::packagelist::import_packagelist();
     let mut choices = vec![];
     let mut defaults = vec![];
 
-    for package in doc["packages"].as_hash().unwrap() {
-        choices.push(package.1["name"].as_str().unwrap());
+    for package in &packages {
+        choices.push(package.name.clone());
         defaults.push(false);
     }
 
@@ -43,21 +41,18 @@ pub async fn install(_: &Option<String>) -> Result<(), Box<dyn std::error::Error
         .defaults(&defaults)
         .interact()?;
 
-    let vec_packages = doc["packages"]
-        .as_hash()
-        .unwrap()
-        .iter()
-        .collect::<Vec<_>>();
-    let packages = selections
-        .iter()
-        .map(|i| vec_packages[*i])
-        .collect::<Vec<_>>();
+    let selected_packages: Vec<_> = selections.iter().map(|&i| &packages[i]).collect();
 
-    for package in &packages {
-        let repository = package.1["repository"].as_str().unwrap();
-        println!("{:?}", repository);
-        let url = package.1["bin_url"].as_str().unwrap();
-        let filename = format!("{LIB_PATH}/opt/{}", url.split('/').last().unwrap());
+    for package in selected_packages {
+        const OS: &str = std::env::consts::OS;
+        const ARCH: &str = std::env::consts::ARCH;
+        let url = format!(
+            "{}/releases/latest/download/{}-{OS}-{ARCH}",
+            package.repository.replace(".git", ""),
+            package.name
+        );
+        println!("{:?}", url);
+        let filename = format!("{LIB_PATH}/{}", package.name);
         let response: reqwest::Response = reqwest::get(url).await?;
         let bytes = response.bytes().await?;
         let mut out = File::create(filename.clone())?;
