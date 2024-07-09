@@ -4,6 +4,7 @@ use dialoguer::MultiSelect;
 use std::fs;
 use std::fs::File;
 use std::io;
+use reqwest::StatusCode;
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 const LIB_PATH: &str = "/usr/local/bin";
@@ -44,7 +45,7 @@ pub async fn install(_: &Option<String>) -> Result<(), Box<dyn std::error::Error
     let selected_packages: Vec<_> = selections.iter().map(|&i| &packages[i]).collect();
 
     for package in selected_packages {
-        const OS: &str = std::env::consts::OS;
+        let OS: &str = get_os_name();
         const ARCH: &str = std::env::consts::ARCH;
         let url = format!(
             "{}/releases/latest/download/{}-{OS}-{ARCH}",
@@ -54,12 +55,32 @@ pub async fn install(_: &Option<String>) -> Result<(), Box<dyn std::error::Error
         println!("{:?}", url);
         let filename = format!("{LIB_PATH}/{}", package.name);
         let response: reqwest::Response = reqwest::get(url).await?;
-        let bytes = response.bytes().await?;
-        let mut out = File::create(filename.clone())?;
-        io::copy(&mut bytes.as_ref(), &mut out)?;
+        match response.status() {
+            StatusCode::OK => {
+                let bytes = response.bytes().await?;
+                let mut out = File::create(filename.clone())?;
+                io::copy(&mut bytes.as_ref(), &mut out)?;
 
-        let _ = set_execute_permissions(filename);
+                let _ = set_execute_permissions(filename);
+            }
+            StatusCode::NOT_FOUND => {
+                println!("インストール先のURLが存在しません。");
+            }
+            StatusCode::INTERNAL_SERVER_ERROR => {
+                println!("サーバーエラーが起こりました。 詳細: {}", response.text().await?);
+            }
+            _ => {
+                println!("ステータスコード: {}, 詳細: {}", response.status(), response.text().await?);
+            }
+        }
     }
 
     Ok(())
+}
+fn get_os_name() -> &'static str {
+    const OS: &str = std::env::consts::OS;
+    if OS == "macos" {
+        return "darwin"
+    }
+    return OS
 }
